@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+/* Base styles */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-gray-50 text-gray-800 antialiased;
+}
+
+.card {
+  @apply bg-white rounded-lg shadow-md p-4;
+}
+
+.btn { @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors cursor-pointer; }
+.btn-primary { @apply bg-blue-600 text-white hover:bg-blue-700; }
+.btn-secondary { @apply bg-gray-100 text-gray-800 hover:bg-gray-200; }
+.btn-danger { @apply bg-red-500 text-white hover:bg-red-600; }
+
+.input { @apply w-full rounded-md border bg-white px-3 py-2 border-gray-300 focus:border-blue-500 focus:ring-blue-500; }
+
+.table { @apply w-full border border-gray-200 rounded-md overflow-hidden; }
+.table thead th { @apply bg-gray-100 text-left px-3 py-2 text-sm font-semibold border-b; }
+.table tbody td { @apply px-3 py-2 border-b text-sm; }
+
+/* Ensure native button elements also use pointer cursor */
+button { @apply cursor-pointer; }
