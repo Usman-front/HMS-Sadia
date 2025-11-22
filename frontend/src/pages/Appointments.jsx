@@ -25,17 +25,17 @@ export default function Appointments() {
   const [form, setForm] = useState({ patientId: '', doctorId: '', date: '', time: '', notes: '' });
 
   const columns = [
-    { header: 'Patient', accessor: 'patientId', cell: (v) => patients.find(p => String(p.id) === String(v))?.name || v },
-    { header: 'Doctor', accessor: 'doctorId', cell: (v) => doctors.find(d => String(d.id) === String(v))?.name || v },
+    { header: 'Patient', accessor: 'patientId', cell: (v, row) => row.patient_name || (patients.find(p => String(p.id) === String(v))?.name || v) },
+    { header: 'Doctor', accessor: 'doctorId', cell: (v, row) => row.doctor_name || (doctors.find(d => String(d.id) === String(v))?.name || v) },
     { header: 'Date', accessor: 'date' },
     { header: 'Time', accessor: 'time', cell: (v) => formatTime(v) || '—' },
     { header: 'Status', accessor: 'status' },
   ];
 
-  const actions = [
+  const actions = role === Roles.ADMIN ? [
     { label: 'Edit', className: 'btn-secondary', onClick: (row) => { setEditing(row); setForm(row); setOpen(true); } },
     { label: 'Cancel', className: 'btn-danger', onClick: async (row) => { await AppointmentsAPI.update(row.id, { ...row, status: 'cancelled' }); await refreshAppointments(); } },
-  ];
+  ] : null;
 
   const refreshAppointments = async () => {
     const list = await AppointmentsAPI.list();
@@ -72,7 +72,7 @@ export default function Appointments() {
 
   const normalize = (n) => String(n || '').toLowerCase().replace(/^dr\.?\s*/,'').trim();
   const matchedDoctor = doctors.find(d => normalize(d.name) === normalize(user?.name || ''));
-  const currentDoctorId = String(matchedDoctor?.id || user?.id || '');
+  const currentDoctorId = String(matchedDoctor?.id || '');
   const visibleAppointments = role === Roles.DOCTOR
     ? appointments.filter(a => String(a.doctorId) === currentDoctorId)
     : appointments;

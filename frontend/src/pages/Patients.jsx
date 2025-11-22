@@ -30,10 +30,10 @@ export default function Patients() {
     { header: 'Contact', accessor: 'contact' },
   ];
 
-  const actions = [
+  const actions = role === Roles.ADMIN ? [
     { label: 'Edit', className: 'btn-secondary', onClick: (row) => { setEditing(row); setForm(row); setOpen(true); } },
     { label: 'Delete', className: 'btn-danger', onClick: async (row) => { await PatientsAPI.remove(row.id); refresh(); } },
-  ];
+  ] : null;
 
   const refresh = async () => {
     const list = await PatientsAPI.list();
@@ -76,7 +76,7 @@ export default function Patients() {
   // Doctor-specific filtering: show only patients assigned to current doctor via appointments
   const normalize = (n) => String(n || '').toLowerCase().replace(/^dr\.?\s*/, '').trim();
   const matchedDoctor = doctors.find(d => normalize(d.name) === normalize(user?.name || ''));
-  const currentDoctorId = String(matchedDoctor?.id || user?.id || '');
+  const currentDoctorId = String(matchedDoctor?.id || '');
   const assignedPatientIds = Array.from(new Set(appointments
     .filter(a => String(a.doctorId) === currentDoctorId)
     .map(a => String(a.patientId))));

@@ -149,8 +149,9 @@ apptRouter.get('/', authMiddleware, async (req, res) => {
   let query = {};
   if (user.role === 'doctor') {
     const normalize = (n) => String(n || '').toLowerCase().replace(/^dr\.?\s*/, '').trim();
+    const userDoc = await getCollection('users').findOne({ _id: new ObjectId(String(user.id)) });
     const doctors = await getCollection('doctors').find({}).toArray();
-    const matched = doctors.find(d => normalize(d.name) === normalize(user.name));
+    const matched = doctors.find(d => normalize(d.name) === normalize(userDoc?.name || ''));
     if (matched) query = { doctor_id: String(matched._id) };
     else query = { doctor_id: '__none__' };
   }
