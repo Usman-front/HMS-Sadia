@@ -32,7 +32,7 @@ export default function Appointments() {
     { header: 'Status', accessor: 'status' },
   ];
 
-  const actions = role === Roles.ADMIN ? [
+  const actions = (role === Roles.ADMIN || role === Roles.RECEPTIONIST) ? [
     { label: 'Edit', className: 'btn-secondary', onClick: (row) => { setEditing(row); setForm(row); setOpen(true); } },
     { label: 'Cancel', className: 'btn-danger', onClick: async (row) => { await AppointmentsAPI.update(row.id, { ...row, status: 'cancelled' }); await refreshAppointments(); } },
   ] : null;
@@ -81,7 +81,7 @@ export default function Appointments() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">Appointments</h2>
-        {role === Roles.ADMIN && (
+        {(role === Roles.ADMIN || role === Roles.RECEPTIONIST) && (
           <Button onClick={() => { setOpen(true); setEditing(null); }}>Book Appointment</Button>
         )}
       </div>

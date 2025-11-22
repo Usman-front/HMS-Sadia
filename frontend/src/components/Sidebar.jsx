@@ -11,7 +11,7 @@ const links = [
   { to: '/pharmacy', label: 'Pharmacy', roles: [Roles.ADMIN, Roles.PHARMACIST] },
   { to: '/laboratory', label: 'Laboratory', roles: [Roles.ADMIN, Roles.LAB, Roles.DOCTOR] },
   { to: '/billing', label: 'Billing', roles: [Roles.ADMIN, Roles.RECEPTIONIST] },
-  { to: '/staff', label: 'Staff', roles: [Roles.ADMIN] },
+  // Staff tab removed per request
   { to: '/reports', label: 'Reports', roles: [Roles.ADMIN] },
 ];
 

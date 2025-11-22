@@ -30,7 +30,7 @@ export default function Patients() {
     { header: 'Contact', accessor: 'contact' },
   ];
 
-  const actions = role === Roles.ADMIN ? [
+  const actions = (role === Roles.ADMIN || role === Roles.RECEPTIONIST) ? [
     { label: 'Edit', className: 'btn-secondary', onClick: (row) => { setEditing(row); setForm(row); setOpen(true); } },
     { label: 'Delete', className: 'btn-danger', onClick: async (row) => { await PatientsAPI.remove(row.id); refresh(); } },
   ] : null;
@@ -88,7 +88,7 @@ export default function Patients() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">Patient Management</h2>
-        {role === Roles.ADMIN && (
+        {(role === Roles.ADMIN || role === Roles.RECEPTIONIST) && (
           <Button onClick={() => { setOpen(true); setEditing(null); }}>Add Patient</Button>
         )}
       </div>

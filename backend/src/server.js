@@ -110,26 +110,26 @@ function toClient(doc) {
   return { id: String(_id), ...rest };
 }
 
-function crud(collectionName, fields) {
+function crud(collectionName, fields, writeRoles = ['admin']) {
   const router = express.Router();
   const coll = () => getCollection(collectionName);
   router.get('/', authMiddleware, async (req, res) => {
     const rows = await coll().find({}).sort({ _id: -1 }).toArray();
     res.json(rows.map(toClient));
   });
-  router.post('/', authMiddleware, requireRole('admin'), async (req, res) => {
+  router.post('/', authMiddleware, requireRole(...writeRoles), async (req, res) => {
     const data = fields.reduce((acc, f) => ({ ...acc, [f]: req.body[f] }), {});
     const result = await coll().insertOne({ ...data, created_at: new Date() });
     const row = await coll().findOne({ _id: result.insertedId });
     res.status(201).json(toClient(row));
   });
-  router.put('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
+  router.put('/:id', authMiddleware, requireRole(...writeRoles), async (req, res) => {
     const updates = fields.reduce((acc, f) => ({ ...acc, [f]: req.body[f] }), {});
     await coll().updateOne({ _id: new ObjectId(String(req.params.id)) }, { $set: updates });
     const row = await coll().findOne({ _id: new ObjectId(String(req.params.id)) });
     res.json(toClient(row));
   });
-  router.delete('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
+  router.delete('/:id', authMiddleware, requireRole(...writeRoles), async (req, res) => {
     await coll().deleteOne({ _id: new ObjectId(String(req.params.id)) });
     res.json({ success: true });
   });
@@ -137,7 +137,7 @@ function crud(collectionName, fields) {
 }
 
 // Entity routes
-app.use('/api/patients', crud('patients', ['name', 'age', 'gender', 'contact']));
+app.use('/api/patients', crud('patients', ['name', 'age', 'gender', 'contact'], ['admin','receptionist']));
 app.use('/api/doctors', crud('doctors', ['name', 'specialty', 'availability']));
 app.use('/api/medicines', crud('medicines', ['name', 'stock', 'price']));
 app.use('/api/staff', crud('staff', ['name', 'role', 'shift']));
@@ -173,7 +173,7 @@ apptRouter.get('/', authMiddleware, async (req, res) => {
   }
   res.json(rows.map(toClient));
 });
-apptRouter.post('/', authMiddleware, requireRole('admin'), async (req, res) => {
+apptRouter.post('/', authMiddleware, requireRole('admin','receptionist'), async (req, res) => {
   const { patient_id, doctor_id, date, time, status, notes } = req.body;
   const result = await getCollection('appointments').insertOne({
     patient_id,
@@ -187,7 +187,7 @@ apptRouter.post('/', authMiddleware, requireRole('admin'), async (req, res) => {
   const row = await getCollection('appointments').findOne({ _id: result.insertedId });
   res.status(201).json(toClient(row));
 });
-apptRouter.put('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
+apptRouter.put('/:id', authMiddleware, requireRole('admin','receptionist'), async (req, res) => {
   const { patient_id, doctor_id, date, time, status, notes } = req.body;
   await getCollection('appointments').updateOne(
     { _id: new ObjectId(String(req.params.id)) },
@@ -196,7 +196,7 @@ apptRouter.put('/:id', authMiddleware, requireRole('admin'), async (req, res) =>
   const row = await getCollection('appointments').findOne({ _id: new ObjectId(String(req.params.id)) });
   res.json(toClient(row));
 });
-apptRouter.delete('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
+apptRouter.delete('/:id', authMiddleware, requireRole('admin','receptionist'), async (req, res) => {
   await getCollection('appointments').deleteOne({ _id: new ObjectId(String(req.params.id)) });
   res.json({ success: true });
 });
