@@ -203,7 +203,7 @@ apptRouter.delete('/:id', authMiddleware, requireRole('admin','receptionist'), a
 app.use('/api/appointments', apptRouter);
 
 // Lab tests
-app.use('/api/lab-tests', crud('lab_tests', ['name', 'status', 'patient_id', 'doctor_id', 'report_url']));
+app.use('/api/lab-tests', crud('lab_tests', ['name', 'status', 'patient_id', 'doctor_id', 'report_url'], ['admin','doctor']));
 
 // Billing/invoices
 app.use('/api/invoices', crud('invoices', ['patient_id', 'total', 'status']));
