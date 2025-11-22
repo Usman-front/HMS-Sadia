@@ -70,7 +70,7 @@ export default function App() {
         <Route path="/pharmacy" element={<DashboardLayout><Pharmacy /></DashboardLayout>} />
       </Route>
 
-      <Route element={<ProtectedRoute allowedRoles={[Roles.ADMIN, Roles.LAB, Roles.DOCTOR]} />}> 
+      <Route element={<ProtectedRoute allowedRoles={[Roles.ADMIN, Roles.LAB, Roles.DOCTOR, Roles.RECEPTIONIST]} />}> 
         <Route path="/laboratory" element={<DashboardLayout><Laboratory /></DashboardLayout>} />
       </Route>
 
