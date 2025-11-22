@@ -1,24 +1,17 @@
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
-import path from 'path';
-import fs from 'fs';
+import { MongoClient } from 'mongodb';
 
 async function main() {
-  // Try common locations depending on where the server is started from
-  const candidates = [
-    path.join(process.cwd(), 'data', 'hms.sqlite'),
-    path.join(process.cwd(), 'backend', 'data', 'hms.sqlite'),
-  ];
-  const dbPath = candidates.find((p) => fs.existsSync(p));
-  if (!dbPath) throw new Error('Could not find hms.sqlite in data/ or backend/data');
-
-  const db = await open({ filename: dbPath, driver: sqlite3.Database });
-  const rows = await db.all('SELECT id, name, email, role FROM users ORDER BY id');
+  const uri = process.env.MONGODB_URI || 'mongodb+srv://usman64446_db_user:1122334455%24%2B@cluster0.gragzo1.mongodb.net/?HMS=Cluster0';
+  const dbName = process.env.DB_NAME || 'hms';
+  const client = new MongoClient(uri);
+  await client.connect();
+  const db = client.db(dbName);
+  const rows = await db.collection('users').find({}).sort({ name: 1 }).project({ name: 1, email: 1, role: 1 }).toArray();
   console.log('Users (id, name, email, role):');
   for (const r of rows) {
-    console.log(`${r.id}\t${r.name}\t${r.email}\t${r.role}`);
+    console.log(`${String(r._id)}\t${r.name}\t${r.email}\t${r.role}`);
   }
-  await db.close();
+  await client.close();
 }
 
 main().catch((e) => {

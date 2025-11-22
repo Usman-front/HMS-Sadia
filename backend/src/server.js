@@ -1,11 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { initDB, getDB } from './db.js';
+import { initDB, getDB, getCollection } from './db.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { ObjectId } from 'mongodb';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -36,7 +37,7 @@ function authMiddleware(req, res, next) {
 // Auth routes
 // Registration restricted to admin users only
 app.post('/api/auth/register', authMiddleware, async (req, res) => {
-  const db = getDB();
+  const users = getCollection('users');
   const { name, email, password, role } = req.body;
   if (!name || !email || !password || !role) return res.status(400).json({ error: 'Missing fields' });
   // Only admins can create accounts
@@ -44,11 +45,11 @@ app.post('/api/auth/register', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: 'Forbidden: Admins only' });
   }
   try {
-    const exists = await db.get('SELECT id FROM users WHERE email = ? LIMIT 1', [email]);
+    const exists = await users.findOne({ email });
     if (exists) return res.status(409).json({ error: 'Email already registered' });
     const hash = bcrypt.hashSync(password, 10);
-    const result = await db.run('INSERT INTO users (name, email, password_hash, role) VALUES (?,?,?,?)', [name, email, hash, role]);
-    const user = { id: result.lastID, name, email, role };
+    const result = await users.insertOne({ name, email, password_hash: hash, role, created_at: new Date() });
+    const user = { id: String(result.insertedId), name, email, role };
     // Return created user (do not auto-issue token for created account)
     res.status(201).json({ user });
   } catch (e) {
@@ -58,15 +59,15 @@ app.post('/api/auth/register', authMiddleware, async (req, res) => {
 });
 
 app.post('/api/auth/login', async (req, res) => {
-  const db = getDB();
+  const users = getCollection('users');
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Missing credentials' });
   try {
-    const row = await db.get('SELECT id, name, email, role, password_hash FROM users WHERE email = ? LIMIT 1', [email]);
+    const row = await users.findOne({ email });
     if (!row) return res.status(401).json({ error: 'Invalid email or password' });
     const ok = bcrypt.compareSync(password, row.password_hash);
     if (!ok) return res.status(401).json({ error: 'Invalid email or password' });
-    const user = { id: row.id, name: row.name, email: row.email, role: row.role };
+    const user = { id: String(row._id), name: row.name, email: row.email, role: row.role };
     const token = sign(user);
     res.json({ user: { ...user, token } });
   } catch (e) {
@@ -76,35 +77,40 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 app.get('/api/auth/me', authMiddleware, async (req, res) => {
-  const db = getDB();
-  const row = await db.get('SELECT id, name, email, role FROM users WHERE id = ? LIMIT 1', [req.user.id]);
+  const users = getCollection('users');
+  const row = await users.findOne({ _id: new ObjectId(String(req.user.id)) }, { projection: { name: 1, email: 1, role: 1 } });
   if (!row) return res.status(404).json({ error: 'Not found' });
-  res.json({ user: row });
+  res.json({ user: { id: String(row._id), name: row.name, email: row.email, role: row.role } });
 });
 
 // Generic CRUD helpers
-function crud(table, fields) {
+function toClient(doc) {
+  if (!doc) return doc;
+  const { _id, ...rest } = doc;
+  return { id: String(_id), ...rest };
+}
+
+function crud(collectionName, fields) {
   const router = express.Router();
+  const coll = () => getCollection(collectionName);
   router.get('/', authMiddleware, async (req, res) => {
-    const rows = await getDB().all(`SELECT * FROM ${table} ORDER BY id DESC`);
-    res.json(rows);
+    const rows = await coll().find({}).sort({ _id: -1 }).toArray();
+    res.json(rows.map(toClient));
   });
   router.post('/', authMiddleware, async (req, res) => {
     const data = fields.reduce((acc, f) => ({ ...acc, [f]: req.body[f] }), {});
-    const placeholders = fields.map(() => '?').join(',');
-    const result = await getDB().run(`INSERT INTO ${table} (${fields.join(',')}) VALUES (${placeholders})`, fields.map(f => data[f]));
-    const row = await getDB().get(`SELECT * FROM ${table} WHERE id = ?`, [result.lastID]);
-    res.status(201).json(row);
+    const result = await coll().insertOne({ ...data, created_at: new Date() });
+    const row = await coll().findOne({ _id: result.insertedId });
+    res.status(201).json(toClient(row));
   });
   router.put('/:id', authMiddleware, async (req, res) => {
-    const sets = fields.map(f => `${f} = ?`).join(',');
-    const values = fields.map(f => req.body[f]);
-    await getDB().run(`UPDATE ${table} SET ${sets} WHERE id = ?`, [...values, req.params.id]);
-    const row = await getDB().get(`SELECT * FROM ${table} WHERE id = ?`, [req.params.id]);
-    res.json(row);
+    const updates = fields.reduce((acc, f) => ({ ...acc, [f]: req.body[f] }), {});
+    await coll().updateOne({ _id: new ObjectId(String(req.params.id)) }, { $set: updates });
+    const row = await coll().findOne({ _id: new ObjectId(String(req.params.id)) });
+    res.json(toClient(row));
   });
   router.delete('/:id', authMiddleware, async (req, res) => {
-    await getDB().run(`DELETE FROM ${table} WHERE id = ?`, [req.params.id]);
+    await coll().deleteOne({ _id: new ObjectId(String(req.params.id)) });
     res.json({ success: true });
   });
   return router;
@@ -119,35 +125,34 @@ app.use('/api/staff', crud('staff', ['name', 'role', 'shift']));
 // Appointments: custom fields with foreign keys
 const apptRouter = express.Router();
 apptRouter.get('/', authMiddleware, async (req, res) => {
-  const rows = await getDB().all(`
-    SELECT a.*, p.name as patient_name, d.name as doctor_name
-    FROM appointments a
-    LEFT JOIN patients p ON p.id = a.patient_id
-    LEFT JOIN doctors d ON d.id = a.doctor_id
-    ORDER BY a.id DESC
-  `);
-  res.json(rows);
+  const rows = await getCollection('appointments').find({}).sort({ _id: -1 }).toArray();
+  res.json(rows.map(toClient));
 });
 apptRouter.post('/', authMiddleware, async (req, res) => {
   const { patient_id, doctor_id, date, time, status, notes } = req.body;
-  const result = await getDB().run(
-    'INSERT INTO appointments (patient_id, doctor_id, date, time, status, notes) VALUES (?,?,?,?,?,?)',
-    [patient_id, doctor_id, date, time || '', status || 'scheduled', notes || '']
-  );
-  const row = await getDB().get('SELECT * FROM appointments WHERE id = ?', [result.lastID]);
-  res.status(201).json(row);
+  const result = await getCollection('appointments').insertOne({
+    patient_id,
+    doctor_id,
+    date,
+    time: time || '',
+    status: status || 'scheduled',
+    notes: notes || '',
+    created_at: new Date(),
+  });
+  const row = await getCollection('appointments').findOne({ _id: result.insertedId });
+  res.status(201).json(toClient(row));
 });
 apptRouter.put('/:id', authMiddleware, async (req, res) => {
   const { patient_id, doctor_id, date, time, status, notes } = req.body;
-  await getDB().run(
-    'UPDATE appointments SET patient_id=?, doctor_id=?, date=?, time=?, status=?, notes=? WHERE id = ?',
-    [patient_id, doctor_id, date, time || '', status, notes, req.params.id]
+  await getCollection('appointments').updateOne(
+    { _id: new ObjectId(String(req.params.id)) },
+    { $set: { patient_id, doctor_id, date, time: time || '', status, notes } }
   );
-  const row = await getDB().get('SELECT * FROM appointments WHERE id = ?', [req.params.id]);
-  res.json(row);
+  const row = await getCollection('appointments').findOne({ _id: new ObjectId(String(req.params.id)) });
+  res.json(toClient(row));
 });
 apptRouter.delete('/:id', authMiddleware, async (req, res) => {
-  await getDB().run('DELETE FROM appointments WHERE id = ?', [req.params.id]);
+  await getCollection('appointments').deleteOne({ _id: new ObjectId(String(req.params.id)) });
   res.json({ success: true });
 });
 app.use('/api/appointments', apptRouter);
