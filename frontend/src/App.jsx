@@ -13,7 +13,6 @@ import Appointments from './pages/Appointments';
 import Pharmacy from './pages/Pharmacy';
 import Laboratory from './pages/Laboratory';
 import Billing from './pages/Billing';
-import Staff from './pages/Staff';
 import Reports from './pages/Reports';
 
 function DashboardLayout({ children }) {
@@ -55,10 +54,9 @@ export default function App() {
         <Route path="/patients" element={<DashboardLayout><Patients /></DashboardLayout>} />
       </Route>
 
-      {/* Doctors, Staff, Reports: Admin only */}
+      {/* Doctors, Reports: Admin only */}
       <Route element={<ProtectedRoute allowedRoles={[Roles.ADMIN]} />}> 
         <Route path="/doctors" element={<DashboardLayout><Doctors /></DashboardLayout>} />
-        <Route path="/staff" element={<DashboardLayout><Staff /></DashboardLayout>} />
         <Route path="/reports" element={<DashboardLayout><Reports /></DashboardLayout>} />
       </Route>
 

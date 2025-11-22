@@ -54,7 +54,9 @@ export default function Appointments() {
       }));
       dispatch(setPatients(p));
       dispatch(setDoctors(normalizedDoctors));
-    } catch {}
+    } catch (e) {
+      console.warn('Failed to refresh people');
+    }
   };
 
   useEffect(() => { refreshAppointments(); refreshPeople(); }, []);

@@ -55,7 +55,7 @@ export default function Laboratory() {
       dispatch(setPatients(p));
       dispatch(setDoctors(normalizedDoctors));
     } catch (e) {
-      // ignore hydration errors for now
+      console.warn('Failed to refresh people');
     }
   };
 

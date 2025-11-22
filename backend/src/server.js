@@ -140,7 +140,6 @@ function crud(collectionName, fields, writeRoles = ['admin']) {
 app.use('/api/patients', crud('patients', ['name', 'age', 'gender', 'contact'], ['admin','receptionist']));
 app.use('/api/doctors', crud('doctors', ['name', 'specialty', 'availability']));
 app.use('/api/medicines', crud('medicines', ['name', 'stock', 'price']));
-app.use('/api/staff', crud('staff', ['name', 'role', 'shift']));
 
 // Appointments: custom fields with foreign keys
 const apptRouter = express.Router();

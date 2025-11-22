@@ -34,7 +34,7 @@ export default function Reports() {
         dispatch(setAppointments(a));
         dispatch(setInvoices(i));
       } catch (e) {
-        // ignore errors; individual tabs also hydrate on visit
+        console.warn('Failed to hydrate reports');
       }
     };
     hydrate();

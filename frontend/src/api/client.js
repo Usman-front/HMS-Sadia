@@ -22,7 +22,7 @@ export async function api(path, { method = 'GET', body, headers = {} } = {}) {
   });
   if (!res.ok) {
     let err = { status: res.status, message: res.statusText };
-    try { err = await res.json(); } catch {}
+    try { err = await res.json(); } catch (e) { err = { status: res.status, message: res.statusText }; }
     throw new Error(err.error || err.message || 'Request failed');
   }
   const ct = res.headers.get('content-type') || '';
@@ -49,12 +49,6 @@ export const DoctorsAPI = {
   remove: (id) => api(`/doctors/${id}`, { method: 'DELETE' }),
 };
 
-export const StaffAPI = {
-  list: () => api('/staff'),
-  create: (data) => api('/staff', { method: 'POST', body: data }),
-  update: (id, data) => api(`/staff/${id}`, { method: 'PUT', body: data }),
-  remove: (id) => api(`/staff/${id}`, { method: 'DELETE' }),
-};
 
 // Pharmacy / Medicines
 export const MedicinesAPI = {

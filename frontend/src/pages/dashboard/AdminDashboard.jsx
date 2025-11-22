@@ -8,7 +8,6 @@ export default function AdminDashboard() {
   const medicines = useSelector((s) => s.pharmacy.medicines);
   const labTests = useSelector((s) => s.lab.tests);
   const invoices = useSelector((s) => s.billing.invoices);
-  const staff = useSelector((s) => s.staff.list);
 
   const cards = [
     { title: 'Patients', value: patients.length },
@@ -17,7 +16,6 @@ export default function AdminDashboard() {
     { title: 'Medicines', value: medicines.length },
     { title: 'Lab Tests', value: labTests.length },
     { title: 'Invoices', value: invoices.length },
-    { title: 'Staff', value: staff.length },
   ];
 
   return (

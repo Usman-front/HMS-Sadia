@@ -41,7 +41,6 @@ export default function Patients() {
   };
 
   useEffect(() => {
-    // Ensure patients, doctors, and appointments are hydrated for filtering
     (async () => {
       try {
         const [p, d, a] = await Promise.all([
@@ -57,7 +56,9 @@ export default function Patients() {
             : (doc.availability ? doc.availability.split(',').map(s=>s.trim()).filter(Boolean) : [])
         }))));
         dispatch(setAppointments(a));
-      } catch {}
+      } catch (e) {
+        console.warn('Failed to refresh patients');
+      }
     })();
   }, [dispatch]);
 
