@@ -35,6 +35,7 @@ export default function Appointments() {
   const actions = (role === Roles.ADMIN || role === Roles.RECEPTIONIST) ? [
     { label: 'Edit', className: 'btn-secondary', onClick: (row) => { setEditing(row); setForm(row); setOpen(true); } },
     { label: 'Cancel', className: 'btn-danger', onClick: async (row) => { await AppointmentsAPI.update(row.id, { ...row, status: 'cancelled' }); await refreshAppointments(); } },
+    { label: 'Delete', className: 'btn-danger', onClick: async (row) => { await AppointmentsAPI.remove(row.id); await refreshAppointments(); } },
   ] : null;
 
   const refreshAppointments = async () => {

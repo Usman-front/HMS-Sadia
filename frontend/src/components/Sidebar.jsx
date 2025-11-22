@@ -9,7 +9,7 @@ const links = [
   { to: '/doctors', label: 'Doctors', roles: [Roles.ADMIN] },
   { to: '/appointments', label: 'Appointments', roles: [Roles.ADMIN, Roles.DOCTOR, Roles.RECEPTIONIST, Roles.PATIENT] },
   { to: '/pharmacy', label: 'Pharmacy', roles: [Roles.ADMIN, Roles.PHARMACIST] },
-  { to: '/laboratory', label: 'Laboratory', roles: [Roles.ADMIN, Roles.LAB, Roles.DOCTOR] },
+  { to: '/laboratory', label: 'Laboratory', roles: [Roles.ADMIN, Roles.LAB, Roles.DOCTOR, Roles.RECEPTIONIST] },
   { to: '/billing', label: 'Billing', roles: [Roles.ADMIN, Roles.RECEPTIONIST] },
   // Staff tab removed per request
   { to: '/reports', label: 'Reports', roles: [Roles.ADMIN] },
