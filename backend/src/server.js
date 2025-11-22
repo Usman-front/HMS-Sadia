@@ -45,6 +45,15 @@ function authMiddleware(req, res, next) {
   }
 }
 
+function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    next();
+  };
+}
+
 // Auth routes
 // Registration restricted to admin users only
 app.post('/api/auth/register', authMiddleware, async (req, res) => {
@@ -108,19 +117,19 @@ function crud(collectionName, fields) {
     const rows = await coll().find({}).sort({ _id: -1 }).toArray();
     res.json(rows.map(toClient));
   });
-  router.post('/', authMiddleware, async (req, res) => {
+  router.post('/', authMiddleware, requireRole('admin'), async (req, res) => {
     const data = fields.reduce((acc, f) => ({ ...acc, [f]: req.body[f] }), {});
     const result = await coll().insertOne({ ...data, created_at: new Date() });
     const row = await coll().findOne({ _id: result.insertedId });
     res.status(201).json(toClient(row));
   });
-  router.put('/:id', authMiddleware, async (req, res) => {
+  router.put('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
     const updates = fields.reduce((acc, f) => ({ ...acc, [f]: req.body[f] }), {});
     await coll().updateOne({ _id: new ObjectId(String(req.params.id)) }, { $set: updates });
     const row = await coll().findOne({ _id: new ObjectId(String(req.params.id)) });
     res.json(toClient(row));
   });
-  router.delete('/:id', authMiddleware, async (req, res) => {
+  router.delete('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
     await coll().deleteOne({ _id: new ObjectId(String(req.params.id)) });
     res.json({ success: true });
   });
@@ -136,10 +145,34 @@ app.use('/api/staff', crud('staff', ['name', 'role', 'shift']));
 // Appointments: custom fields with foreign keys
 const apptRouter = express.Router();
 apptRouter.get('/', authMiddleware, async (req, res) => {
-  const rows = await getCollection('appointments').find({}).sort({ _id: -1 }).toArray();
+  const user = req.user;
+  let query = {};
+  if (user.role === 'doctor') {
+    const normalize = (n) => String(n || '').toLowerCase().replace(/^dr\.?\s*/, '').trim();
+    const doctors = await getCollection('doctors').find({}).toArray();
+    const matched = doctors.find(d => normalize(d.name) === normalize(user.name));
+    if (matched) query = { doctor_id: String(matched._id) };
+    else query = { doctor_id: '__none__' };
+  }
+  const rows = await getCollection('appointments').find(query).sort({ _id: -1 }).toArray();
+
+  if (user.role === 'admin') {
+    const [patients, doctors] = await Promise.all([
+      getCollection('patients').find({}).project({ name: 1 }).toArray(),
+      getCollection('doctors').find({}).project({ name: 1 }).toArray(),
+    ]);
+    const pMap = new Map(patients.map(p => [String(p._id), p.name]));
+    const dMap = new Map(doctors.map(d => [String(d._id), d.name]));
+    const enriched = rows.map(r => ({
+      ...toClient(r),
+      patient_name: pMap.get(String(r.patient_id)) || null,
+      doctor_name: dMap.get(String(r.doctor_id)) || null,
+    }));
+    return res.json(enriched);
+  }
   res.json(rows.map(toClient));
 });
-apptRouter.post('/', authMiddleware, async (req, res) => {
+apptRouter.post('/', authMiddleware, requireRole('admin'), async (req, res) => {
   const { patient_id, doctor_id, date, time, status, notes } = req.body;
   const result = await getCollection('appointments').insertOne({
     patient_id,
@@ -153,7 +186,7 @@ apptRouter.post('/', authMiddleware, async (req, res) => {
   const row = await getCollection('appointments').findOne({ _id: result.insertedId });
   res.status(201).json(toClient(row));
 });
-apptRouter.put('/:id', authMiddleware, async (req, res) => {
+apptRouter.put('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
   const { patient_id, doctor_id, date, time, status, notes } = req.body;
   await getCollection('appointments').updateOne(
     { _id: new ObjectId(String(req.params.id)) },
@@ -162,7 +195,7 @@ apptRouter.put('/:id', authMiddleware, async (req, res) => {
   const row = await getCollection('appointments').findOne({ _id: new ObjectId(String(req.params.id)) });
   res.json(toClient(row));
 });
-apptRouter.delete('/:id', authMiddleware, async (req, res) => {
+apptRouter.delete('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
   await getCollection('appointments').deleteOne({ _id: new ObjectId(String(req.params.id)) });
   res.json({ success: true });
 });

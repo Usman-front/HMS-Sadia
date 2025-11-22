@@ -90,7 +90,7 @@ export const InvoicesAPI = {
   },
   create: (data) => {
     const body = {
-      patient_id: Number(data.patientId),
+      patient_id: String(data.patientId),
       total: Number(data.total) || 0,
       status: data.status || 'unpaid',
     };
@@ -98,7 +98,7 @@ export const InvoicesAPI = {
   },
   update: (id, data) => {
     const body = {
-      patient_id: Number(data.patientId),
+      patient_id: String(data.patientId),
       total: Number(data.total) || 0,
       status: data.status,
     };
@@ -123,8 +123,8 @@ export const AppointmentsAPI = {
   },
   create: (data) => {
     const body = {
-      patient_id: Number(data.patientId),
-      doctor_id: Number(data.doctorId),
+      patient_id: String(data.patientId),
+      doctor_id: String(data.doctorId),
       date: data.date,
       time: data.time || '',
       status: data.status || 'scheduled',
@@ -134,8 +134,8 @@ export const AppointmentsAPI = {
   },
   update: (id, data) => {
     const body = {
-      patient_id: Number(data.patientId),
-      doctor_id: Number(data.doctorId),
+      patient_id: String(data.patientId),
+      doctor_id: String(data.doctorId),
       date: data.date,
       time: data.time || '',
       status: data.status,
@@ -162,8 +162,8 @@ export const LabTestsAPI = {
     const body = {
       name: data.name,
       status: data.status || 'pending',
-      patient_id: Number(data.patientId),
-      doctor_id: Number(data.doctorId),
+      patient_id: String(data.patientId),
+      doctor_id: String(data.doctorId),
       report_url: data.reportUrl || '',
     };
     return api('/lab-tests', { method: 'POST', body });
@@ -172,8 +172,8 @@ export const LabTestsAPI = {
     const body = {
       name: data.name,
       status: data.status,
-      patient_id: Number(data.patientId),
-      doctor_id: Number(data.doctorId),
+      patient_id: String(data.patientId),
+      doctor_id: String(data.doctorId),
       report_url: data.reportUrl || '',
     };
     return api(`/lab-tests/${id}`, { method: 'PUT', body });

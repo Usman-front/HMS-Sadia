@@ -88,7 +88,9 @@ export default function Patients() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">Patient Management</h2>
-        <Button onClick={() => { setOpen(true); setEditing(null); }}>Add Patient</Button>
+        {role === Roles.ADMIN && (
+          <Button onClick={() => { setOpen(true); setEditing(null); }}>Add Patient</Button>
+        )}
       </div>
 
       <Card>

@@ -81,7 +81,9 @@ export default function Appointments() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">Appointments</h2>
-        <Button onClick={() => { setOpen(true); setEditing(null); }}>Book Appointment</Button>
+        {role === Roles.ADMIN && (
+          <Button onClick={() => { setOpen(true); setEditing(null); }}>Book Appointment</Button>
+        )}
       </div>
 
       <Card>
